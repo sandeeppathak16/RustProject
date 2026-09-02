@@ -1,84 +1,141 @@
 use std::io;
-use todo::todo::ToDo;
-
-
-fn create_todo() -> ToDo {
-    let mut name = String::new();
-    println!("Enter Name");
-    io::stdin().read_line(&mut name).unwrap();
-
-    let mut description = String::new();
-    println!("Enter description (optional)");
-    io::stdin().read_line(&mut description).unwrap();
-
-    let mut day_remaining = String::new();
-    println!("Enter days remaining (optional)");
-    io::stdin().read_line(&mut day_remaining).unwrap();
-
-    let description = if description.trim().is_empty() {
-        None
-    } else {
-        Some(description.trim().to_string())
-    };
-
-    let due_in_days = if day_remaining.trim().is_empty() {
-        None
-    } else {
-        match day_remaining.trim().parse::<i64>() {
-            Ok(days) => Some(days),
-            Err(_) => {
-                println!("Please enter a valid number");
-                return;
-            }
-        }
-    };
-
-    ToDo::new(
-        name.trim().to_string(),
-        description,
-        due_in_days,
-    )
-}
-
-
-fn add_todo(todo: Option<Todo>) {
-    let todo = match todo {
-        Some(todo) => todo,
-        None => create_todo()
-    }
-
-    todo.view_todo();
-
-    println!("let us know if we could add this file or not 1/0: \n");
-    let mut can_add = String::new();
-
-    match can_add.trim().parse::<u32>() {
-        Ok(0) => add_todo(todo),
-        Ok(1) => todo.add(),
-        Ok(_) => {
-            println!("Invalid option");
-            add_todo(todo);
-        }
-        Err(_) => {
-            println!("Please enter a number");
-            add_todo(todo);
-        }
-    }
-}
+use todo::todo_manager::TodoManager;
+use todo::cli::{create_todo, edit_todo};
 
 
 fn main() {
-    println!("Enter Option\n");
-    println!("1. View todos");
-    println!("2. Add todos\n");
+    let manager = TodoManager::new("todos.json");
 
-    let mut ops = String::new();
-    io::stdin().read_line(&mut ops).unwrap();
+    loop {
+        println!();
+        println!("====================");
+        println!("TODO APPLICATION");
+        println!("====================");
+        println!("1. View Todos");
+        println!("2. Add Todo");
+        println!("3. Edit Todo");
+        println!("4. Delete Todo");
+        println!("5. Mark Todo Done");
+        println!("6. Exit");
+        println!();
 
-    match ops.trim().parse::<u32>() {
-        Ok(1) => add_todo(),
-        Ok(2) => println!("Adding todo"),
-        Ok(_) => println!("Invalid option"),
-        Err(_) => println!("Please enter a number"),
+        let mut option = String::new();
+
+        io::stdin()
+            .read_line(&mut option)
+            .expect("Failed to read input");
+
+        let option = match option.trim().parse::<u32>() {
+            Ok(option) => option,
+            Err(_) => {
+                println!("Please enter a valid number");
+                continue;
+            }
+        };
+
+        match option {
+            1 => {
+                manager.view_all();
+            }
+
+            2 => {
+                match create_todo() {
+                    Some(todo) => {
+                        manager.add(todo);
+                        println!("Todo added successfully");
+                    }
+                    None => {
+                        println!("Failed to create todo");
+                    }
+                }
+            }
+
+            3 => {
+                manager.view_all();
+
+                println!("Enter Todo ID:");
+
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+
+                let id = match input.trim().parse::<u64>() {
+                    Ok(id) => id,
+                    Err(_) => {
+                        println!("Invalid ID");
+                        continue;
+                    }
+                };
+
+                match manager.get_by_id(id) {
+                    Some(mut todo) => {
+                        edit_todo(&mut todo);
+
+                        if manager.update(todo) {
+                            println!("Todo updated successfully");
+                        } else {
+                            println!("Failed to update todo");
+                        }
+                    }
+                    None => {
+                        println!("Todo not found");
+                    }
+                }
+            }
+
+            4 => {
+                manager.view_all();
+
+                println!("Enter Todo ID to delete:");
+
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+
+                let id = match input.trim().parse::<u64>() {
+                    Ok(id) => id,
+                    Err(_) => {
+                        println!("Invalid ID");
+                        continue;
+                    }
+                };
+
+                if manager.delete(id) {
+                    println!("Todo deleted successfully");
+                } else {
+                    println!("Todo not found");
+                }
+            }
+
+            5 => {
+                manager.view_all();
+
+                println!("Enter Todo ID to mark done:");
+
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+
+                let id = match input.trim().parse::<u64>() {
+                    Ok(id) => id,
+                    Err(_) => {
+                        println!("Invalid ID");
+                        continue;
+                    }
+                };
+
+                if manager.mark_done(id) {
+                    println!("Todo marked as done");
+                } else {
+                    println!("Todo not found");
+                }
+            }
+
+            6 => {
+                println!("Goodbye!");
+                break;
+            }
+
+            _ => {
+                println!("Invalid option");
+            }
+        }
     }
 }

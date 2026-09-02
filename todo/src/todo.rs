@@ -1,21 +1,19 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
-
 
 #[derive(Debug, Serialize, Deserialize)]
-enum Schedule {
+pub enum Schedule {
     NoDeadline,
     Due(DateTime<Utc>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToDo {
-    name: String,
-    description: Option<String>,
-    done: bool,
-    schedule: Schedule,
+    pub id: u64,
+    pub name: String,
+    pub description: Option<String>,
+    pub done: bool,
+    pub schedule: Schedule,
 }
 
 impl ToDo {
@@ -30,6 +28,7 @@ impl ToDo {
         };
 
         Self {
+            id: Utc::now().timestamp_millis() as u64,
             name,
             description,
             done: false,
@@ -37,32 +36,32 @@ impl ToDo {
         }
     }
 
-    pub fn view_todo(&self) {
-        println!("todo");
-        println!("name: {}", self.name);
-        println!("description: {:?}", self.description);
-        println!("schedule: {:?}", self.schedule);
+    pub fn view(&self) {
+        println!("----------------------------");
+        println!("ID          : {}", self.id);
+        println!("Name        : {}", self.name);
+        println!("Description : {:?}", self.description);
+        println!("Done        : {}", self.done);
+        println!("Schedule    : {:?}", self.schedule);
+        println!("----------------------------");
     }
 
-    pub fn add(self) {
-        let file_path = "todos.json";
-
-        if !Path::new(file_path).exists() {
-            fs::write(file_path, "[]").expect("Failed to create file");
+    pub fn edit(
+        &mut self,
+        description: Option<String>,
+        done: Option<bool>,
+        due_in_days: Option<i64>,
+    ) {
+        if let Some(description) = description {
+            self.description = Some(description);
         }
 
-        let content =
-            fs::read_to_string(file_path).expect("Failed to read file");
+        if let Some(done) = done {
+            self.done = done;
+        }
 
-        let mut todos: Vec<ToDo> =
-            serde_json::from_str(&content).unwrap_or_default();
-
-        todos.push(self);
-
-        let json =
-            serde_json::to_string_pretty(&todos).unwrap();
-
-        fs::write(file_path, json)
-            .expect("Failed to write file");
+        if let Some(days) = due_in_days {
+            self.schedule = Schedule::Due(Utc::now() + Duration::days(days));
+        }
     }
 }
