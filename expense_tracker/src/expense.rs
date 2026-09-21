@@ -1,23 +1,24 @@
 use chrono::NaiveDate;
 use uuid::Uuid;
 use std::fmt;
-use std::str::Fromstr;
-use crate::model::ExpenseRow;
+use std::str::FromStr;
+use crate::models::ExpenseRow;
 
 
-enum ExpenseType {
+pub enum ExpenseType {
     Need,
     Want,
 }
 
-impl fmt::Display for ExpenseType {
-    type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self:Err> {
-        match s {
-            "Need" => Ok(ExpenseType::Need),
-            "Want" => Ok(Expense::Want),
-            _ => Err(format!("Invalid expense type: {}", s)),
+impl fmt::Display for ExpenseType {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        match self {
+            ExpenseType::Need => write!(f, "Need"),
+            ExpenseType::Want => write!(f, "Want"),
         }
     }
 }
@@ -34,13 +35,12 @@ impl FromStr for ExpenseType {
     }
 }
 
-
-struct Expense {
-    id: Uuid,
-    expense_type: ExpenseType,
-    amount: f32,
-    date: NaiveDate,
-    description: Option<String>,
+pub struct Expense {
+    pub id: Uuid,
+    pub expense_type: ExpenseType,
+    pub amount: f32,
+    pub date: NaiveDate,
+    pub description: Option<String>,
 }
 
 impl Expense {
